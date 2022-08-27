@@ -1,0 +1,28 @@
+{
+  "name": "craigsdennis.dev",
+  "version": "1.0.0",
+  "description": "Playground for Cloudtown",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "parser": "functions-framework --target=parser",
+    "deploy-parser": "gcloud functions deploy sendgrid-inbound-parser --gen2 --runtime nodejs16 --entry-point=parser --region=us-west1 --env-vars-file=.env.yaml --trigger-http",
+    "deploy-send-welcome-email": "gcloud functions deploy send-welcome-email --gen2 --runtime=nodejs16 --entry-point=send-welcome-email --region=us-west1 --env-vars-file=.env.yaml --trigger-topic=inbound-email-received"
+  },
+  "keywords": [
+    "google",
+    "cloud",
+    "functions",
+    "gen2",
+    "sendgrid"
+  ],
+  "author": "Craig Dennis <craigsdennis@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.1.2",
+    "@google-cloud/pubsub": "^3.1.0",
+    "@sendgrid/mail": "^7.7.0",
+    "busboy": "^1.6.0",
+    "mailparser": "^3.5.0"
+  }
+}
