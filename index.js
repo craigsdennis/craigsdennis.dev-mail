@@ -11,7 +11,7 @@ functions.http("parser", async (req, res) => {
   console.log("Parsing multi-part form data");
   const formData = await parseMultipartFormRequest(req);
   console.dir(formData);
-  // Validate SendGrid was the sender
+  // TODO: Validate SendGrid was the sender
   // Parse Email Object
   console.log("Parsing email");
   const parsedMail = await simpleParser(formData.email);
