@@ -5,6 +5,7 @@ const { simpleParser } = require("mailparser");
 const { parseMultipartFormRequest } = require("./multipart");
 
 pubsub = new PubSub();
+// Stored in Secret Manager but exposed as an environment variable
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 functions.http("parser", async (req, res) => {
