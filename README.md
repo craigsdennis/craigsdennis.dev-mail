@@ -5,3 +5,20 @@ Experimenting on my craigsdennis.dev domain with [SendGrid Inbound Parse](https:
 Requires setting `SENDGRID_API_KEY` in the [Secret Manager](https://cloud.google.com/functions/docs/configuring/secrets)
 
 Warning this very much #LearningInPublic and I have literally no idea what I am doing. Proceed at your own risk.
+
+
+## Deployment
+
+This makes use of [Terraform](https://terraform.io) for infrastructure as code.
+
+Zip up the Google Cloud Functions
+
+```bash
+npm run pack
+# Wire up the functions and services
+terraform apply
+```
+
+
+
+

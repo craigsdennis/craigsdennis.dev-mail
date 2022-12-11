@@ -6,8 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "parser": "functions-framework --target=parser",
-    "deploy-parser": "gcloud functions deploy sendgrid-inbound-parser --gen2 --runtime nodejs16 --entry-point=parser --region=us-west1 --env-vars-file=.env.yaml --trigger-http",
-    "deploy-send-welcome-email": "gcloud functions deploy send-welcome-email --gen2 --runtime=nodejs16 --entry-point=send-welcome-email --region=us-west1 --env-vars-file=.env.yaml --trigger-topic=inbound-email-received"
+    "pack": "npm-pack-zip"
   },
   "keywords": [
     "google",
@@ -23,7 +22,9 @@
     "@google-cloud/pubsub": "^3.1.0",
     "@google-cloud/secret-manager": "^4.1.1",
     "@sendgrid/mail": "^7.7.0",
+    "archiver": "^5.3.1",
     "busboy": "^1.6.0",
-    "mailparser": "^3.5.0"
+    "mailparser": "^3.5.0",
+    "npm-pack-zip": "^1.3.0"
   }
 }
