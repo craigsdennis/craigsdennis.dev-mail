@@ -50,7 +50,7 @@ resource "google_cloudfunctions2_function" "parser" {
     max_instance_count = 1
     available_memory   = "256M"
     timeout_seconds    = 60
-    
+
     environment_variables = {
       TOPIC_INBOUND_EMAIL = var.inbound-email-received-topic
     }
@@ -70,6 +70,10 @@ resource "google_pubsub_topic" "inbound_topic" {
   name = var.inbound-email-received-topic
 }
 
+resource "google_pubsub_topic" "outbound_email_topic" {
+  name = var.outbound-email-ready-topic
+}
+
 resource "google_cloudfunctions2_function" "welcome-handler" {
   name        = "welcome-handler"
   location    = "us-west1"
@@ -87,14 +91,17 @@ resource "google_cloudfunctions2_function" "welcome-handler" {
   }
 
   service_config {
-    max_instance_count = 3
-    min_instance_count = 1
-    available_memory   = "256M"
-    timeout_seconds    = 60
-    ingress_settings = "ALLOW_INTERNAL_ONLY"
+    max_instance_count             = 3
+    min_instance_count             = 1
+    available_memory               = "256M"
+    timeout_seconds                = 60
+    ingress_settings               = "ALLOW_INTERNAL_ONLY"
     all_traffic_on_latest_revision = true
+    environment_variables = {
+      "OUTBOUND_EMAIL_TOPIC" = var.outbound-email-ready-topic
+    }
   }
-  
+
   event_trigger {
     trigger_region = "us-west1"
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
@@ -112,10 +119,78 @@ resource "google_cloud_run_service_iam_binding" "welcome-handler-binding" {
   ]
 }
 
+resource "google_cloudfunctions2_function" "emailer" {
+  name        = "emailer"
+  location    = "us-west1"
+  description = "Handles all outbound emails"
+
+  build_config {
+    runtime     = "nodejs16"
+    entry_point = "emailer" # Set the entry point 
+    source {
+      storage_source {
+        bucket = google_storage_bucket.bucket.name
+        object = google_storage_bucket_object.sourcecode.name
+      }
+    }
+  }
+
+  service_config {
+    max_instance_count             = 3
+    min_instance_count             = 1
+    available_memory               = "256M"
+    timeout_seconds                = 60
+    ingress_settings               = "ALLOW_INTERNAL_ONLY"
+    all_traffic_on_latest_revision = true
+    environment_variables = {
+      "WELCOME_TEMPLATE_ID" = "d-c16b437188f74c04997d9cb717f59c0e"
+      "WELCOME_FROM"        = "newsletter@craigsdennis.dev",
+      "WELCOME_REPLY_TO"    = "craigsdennis+devreplyto@gmail.com"
+    }
+    secret_environment_variables {
+      key        = "SENDGRID_API_KEY"
+      project_id = var.project
+      secret     = "SENDGRID_API_KEY"
+      version    = "latest"
+    }
+  }
+
+  event_trigger {
+    trigger_region = "us-west1"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.outbound_email_topic.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
+
+  depends_on = [
+    google_secret_manager_secret_iam_binding.sengrid_api_secret_binding
+  ]
+}
+
+resource "google_cloud_run_service_iam_binding" "emailer-binding" {
+  location = google_cloudfunctions2_function.emailer.location
+  service  = google_cloudfunctions2_function.emailer.name
+  role     = "roles/run.invoker"
+  members = [
+    var.compute_service_account
+  ]
+}
+
+
+
 resource "google_pubsub_topic_iam_binding" "inbound_binding" {
   project = var.project
-  topic = google_pubsub_topic.inbound_topic.name
-  role = "roles/pubsub.admin"
+  topic   = google_pubsub_topic.inbound_topic.name
+  role    = "roles/pubsub.admin"
+  members = [
+    var.compute_service_account,
+  ]
+}
+
+resource "google_pubsub_topic_iam_binding" "outbound_email_binding" {
+  project = var.project
+  topic   = google_pubsub_topic.outbound_email_topic.name
+  role    = "roles/pubsub.admin"
   members = [
     var.compute_service_account,
   ]
@@ -123,11 +198,10 @@ resource "google_pubsub_topic_iam_binding" "inbound_binding" {
 
 
 resource "google_secret_manager_secret_iam_binding" "sengrid_api_secret_binding" {
-  project = var.project
+  project   = var.project
   secret_id = "SENDGRID_API_KEY"
-  role = "roles/secretmanager.secretAccessor"
-  # TODO: make this better
-  members = [var.compute_service_account]
+  role      = "roles/secretmanager.secretAccessor"
+  members   = [var.compute_service_account]
 }
 
 output "sendgrid_webhook_url" {

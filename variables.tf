@@ -16,6 +16,11 @@ variable "inbound-email-received-topic" {
     default = "inbound-email-received"
 }
 
+variable "outbound-email-ready-topic" {
+    type = string
+    default = "outbound-email-ready"
+}
+
 variable "sourcecode-file-name" {
     type = string
     default = "craigsdennis.dev.zip"

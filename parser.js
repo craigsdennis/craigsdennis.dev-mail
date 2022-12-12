@@ -1,6 +1,6 @@
 const busboy = require("busboy");
 const { simpleParser } = require("mailparser");
-const { publishObject } = require("./utils");
+const { publishObject } = require("./utils/events");
 
 function parseMultipartFormRequest(req) {
   return new Promise((resolve, reject) => {
