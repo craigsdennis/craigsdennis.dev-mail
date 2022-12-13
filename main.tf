@@ -22,6 +22,14 @@ resource "google_storage_bucket" "bucket" {
   uniform_bucket_level_access = true
 }
 
+resource "google_storage_bucket" "messages_bucket" {
+  name                        = "${random_id.bucket_prefix.hex}-messages"
+  location                    = "US"
+  uniform_bucket_level_access = true
+  force_destroy               = true
+}
+
+
 
 resource "google_storage_bucket_object" "sourcecode" {
   name   = var.sourcecode-file-name
@@ -119,6 +127,51 @@ resource "google_cloud_run_service_iam_binding" "welcome-handler-binding" {
   ]
 }
 
+resource "google_cloudfunctions2_function" "keeper" {
+  name        = "keeper"
+  location    = "us-west1"
+  description = "Stores incoming messages"
+
+  build_config {
+    runtime     = "nodejs16"
+    entry_point = "keeper" # Set the entry point 
+    source {
+      storage_source {
+        bucket = google_storage_bucket.bucket.name
+        object = google_storage_bucket_object.sourcecode.name
+      }
+    }
+  }
+
+  service_config {
+    max_instance_count             = 3
+    min_instance_count             = 1
+    available_memory               = "256M"
+    timeout_seconds                = 60
+    ingress_settings               = "ALLOW_INTERNAL_ONLY"
+    all_traffic_on_latest_revision = true
+    environment_variables = {
+      "MESSAGES_BUCKET_NAME" = google_storage_bucket.messages_bucket.name
+    }
+  }
+
+  event_trigger {
+    trigger_region = "us-west1"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.inbound_topic.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
+}
+
+resource "google_cloud_run_service_iam_binding" "keeper-binding" {
+  location = google_cloudfunctions2_function.keeper.location
+  service  = google_cloudfunctions2_function.keeper.name
+  role     = "roles/run.invoker"
+  members = [
+    var.compute_service_account
+  ]
+}
+
 resource "google_cloudfunctions2_function" "emailer" {
   name        = "emailer"
   location    = "us-west1"
@@ -175,8 +228,6 @@ resource "google_cloud_run_service_iam_binding" "emailer-binding" {
     var.compute_service_account
   ]
 }
-
-
 
 resource "google_pubsub_topic_iam_binding" "inbound_binding" {
   project = var.project

@@ -1,6 +1,8 @@
 const { objectFromEvent, publishObject } = require("./utils/events");
 const { doesUserExist, addNewUser } = require("./utils/data");
 
+//TODO: rename to greeter
+
 module.exports = async (cloudEvent) => {
   const email = objectFromEvent(cloudEvent);
   // TODO: A util?
