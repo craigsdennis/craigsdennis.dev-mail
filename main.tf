@@ -82,14 +82,14 @@ resource "google_pubsub_topic" "outbound_email_topic" {
   name = var.outbound-email-ready-topic
 }
 
-resource "google_cloudfunctions2_function" "welcome-handler" {
-  name        = "welcome-handler"
+resource "google_cloudfunctions2_function" "greeter" {
+  name        = "greeter"
   location    = "us-west1"
   description = "Handles new user incoming email"
 
   build_config {
     runtime     = "nodejs16"
-    entry_point = "welcome-handler" # Set the entry point 
+    entry_point = "greeter" # Set the entry point 
     source {
       storage_source {
         bucket = google_storage_bucket.bucket.name
@@ -118,9 +118,9 @@ resource "google_cloudfunctions2_function" "welcome-handler" {
   }
 }
 
-resource "google_cloud_run_service_iam_binding" "welcome-handler-binding" {
-  location = google_cloudfunctions2_function.welcome-handler.location
-  service  = google_cloudfunctions2_function.welcome-handler.name
+resource "google_cloud_run_service_iam_binding" "greeter-binding" {
+  location = google_cloudfunctions2_function.greeter.location
+  service  = google_cloudfunctions2_function.greeter.name
   role     = "roles/run.invoker"
   members = [
     var.compute_service_account
