@@ -1,5 +1,6 @@
-const { objectFromEvent, publishObject } = require("./utils/events");
+const { objectFromEvent } = require("./utils/events");
 const { doesUserExist, addNewUser } = require("./utils/data");
+const {sendToEmailer} = require("./utils/email");
 
 module.exports = async (cloudEvent) => {
   const email = objectFromEvent(cloudEvent);
@@ -9,23 +10,16 @@ module.exports = async (cloudEvent) => {
   const toKey = email.to.value[0].address.split("@")[0].toLowerCase();
   // Only handle new
   if (await doesUserExist(emailAddress)) {
-    console.log(`User already exists, not welcoming`);
-    // TODO: ACK?
+    console.log(`User already exists, not greeting`);
     return;
   }
   // Create User
   await addNewUser(emailAddress, { name });
   // Send Email (via a channel)
-  console.log(`Welcome email is ready for ${emailAddress}`);
-  const messageId = await publishObject(process.env.OUTBOUND_EMAIL_TOPIC, {
-    templateKey: "WELCOME",
-    to: emailAddress,
-    data: {
-      name,
-      incoming_subject: email.subject,
-    },
-  });
-  console.log(
-    `Published message ${messageId} to ${process.env.OUTBOUND_EMAIL_TOPIC}`
-  );
+  await sendToEmailer("WELCOME", emailAddress, {
+    name,
+    incoming_subject: email.subject
+
+  })
+  
 };
