@@ -152,6 +152,7 @@ resource "google_cloudfunctions2_function" "keeper" {
     all_traffic_on_latest_revision = true
     environment_variables = {
       "MESSAGES_BUCKET_NAME" = google_storage_bucket.messages_bucket.name
+      "OUTBOUND_EMAIL_TOPIC" = var.outbound-email-ready-topic
     }
   }
 
@@ -199,6 +200,9 @@ resource "google_cloudfunctions2_function" "emailer" {
       "WELCOME_TEMPLATE_ID" = "d-c16b437188f74c04997d9cb717f59c0e"
       "WELCOME_FROM"        = "newsletter@craigsdennis.dev",
       "WELCOME_REPLY_TO"    = "craigsdennis+devreplyto@gmail.com"
+      "STATUS_TEMPLATE_ID" = "d-acfa3edcd3954767abc8fb3764f973e6"
+      "STATUS_FROM"        = "newsletter@craigsdennis.dev",
+      "STATUS_REPLY_TO"    = "craigsdennis+devreplyto@gmail.com"
     }
     secret_environment_variables {
       key        = "SENDGRID_API_KEY"
