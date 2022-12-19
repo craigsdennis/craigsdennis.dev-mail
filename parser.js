@@ -3,7 +3,7 @@ const { publishObject } = require("./utils/events");
 
 module.exports = async (req, res) => {
   // Inflate email from request
-  const email = await emailFromRequest(req);
+  const email = emailFromRequest(req);
   // Publish incoming email to subscribers
   const messageId = await publishObject(
     process.env.TOPIC_INBOUND_EMAIL,

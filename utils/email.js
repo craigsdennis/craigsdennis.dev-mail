@@ -26,7 +26,7 @@ async function emailFromRequest(req) {
 
 // Should this include `from`?
 async function sendToEmailer(templateKey, to, data) {
-  // ???:Environment variable here needs to be set...does a module save this problem?
+  // Environment variable here needs to be set
   const messageId = await publishObject(process.env.OUTBOUND_EMAIL_TOPIC, {
     templateKey,
     to,

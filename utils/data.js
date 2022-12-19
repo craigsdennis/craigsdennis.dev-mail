@@ -31,6 +31,8 @@ async function storeMessageFor(emailAddress, message) {
     .save(JSON.stringify(message));
   // Add metadata to messages collection for user
   const ref = await _getUserRef(emailAddress);
+  // TODO: Will this just create it?
+  // TODO: Creation Date
   await ref.collection("messages").add({
     messageId: message.messageId,
     date: message.date,
@@ -43,8 +45,7 @@ async function storeMessageFor(emailAddress, message) {
 async function getMessages(emailAddress) {
   const ref = await _getUserRef(emailAddress);
   // ORDER BY
-  const snap = await ref.collection("messages").get();
-  const docs = snap.docs;
+  const docs = await ref.collection("messages").get();
   return docs.map(doc => doc.data());
 }
 
