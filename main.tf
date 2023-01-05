@@ -199,10 +199,9 @@ resource "google_cloudfunctions2_function" "emailer" {
     environment_variables = {
       "WELCOME_TEMPLATE_ID" = "d-c16b437188f74c04997d9cb717f59c0e"
       "WELCOME_FROM"        = "newsletter@craigsdennis.dev",
-      "WELCOME_REPLY_TO"    = "craigsdennis+devreplyto@gmail.com"
-      "STATUS_TEMPLATE_ID" = "d-acfa3edcd3954767abc8fb3764f973e6"
-      "STATUS_FROM"        = "newsletter@craigsdennis.dev",
-      "STATUS_REPLY_TO"    = "craigsdennis+devreplyto@gmail.com"
+      "STATUS_TEMPLATE_ID"  = "d-acfa3edcd3954767abc8fb3764f973e6"
+      "STATUS_FROM"         = "newsletter@craigsdennis.dev",
+      "REPLY_TO_DOMAIN"     = "store.craigsdennis.dev"
     }
     secret_environment_variables {
       key        = "SENDGRID_API_KEY"

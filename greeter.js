@@ -1,6 +1,6 @@
 const { objectFromEvent } = require("./utils/events");
 const { doesUserExist, addNewUser } = require("./utils/data");
-const {sendToEmailer} = require("./utils/email");
+const { sendToEmailer } = require("./utils/email");
 
 module.exports = async (cloudEvent) => {
   const email = objectFromEvent(cloudEvent);
@@ -14,12 +14,12 @@ module.exports = async (cloudEvent) => {
     return;
   }
   // Create User
-  await addNewUser(emailAddress, { name });
+  const userId = await addNewUser(emailAddress, { name });
   // Send Email (via a channel)
+  // TODO: REPLY_ID might not be required here...use the template?
   await sendToEmailer("WELCOME", emailAddress, {
     name,
-    incoming_subject: email.subject
-
-  })
-  
+    incoming_subject: email.subject,
+    reply_id: `U-${userId}`,
+  });
 };
