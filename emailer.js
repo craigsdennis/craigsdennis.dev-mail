@@ -1,6 +1,7 @@
 // Add things to the email as needed one place to send
 const sgMail = require("@sendgrid/mail");
 const { objectFromEvent } = require("./utils/events");
+const { generateReplyTo } = require("./utils/email");
 
 module.exports = async function (cloudEvent) {
   const config = objectFromEvent(cloudEvent);
@@ -9,7 +10,8 @@ module.exports = async function (cloudEvent) {
   // TODO: This is a little dorky...a module?
   const templateId = process.env[templateKey + "_TEMPLATE_ID"];
   const from = process.env[templateKey + "_FROM"];
-  const replyTo = generateReplyTo(config.reply_id);
+  const replyTo = generateReplyTo(config.replyId);
+  console.log(`Reply to is ${replyTo}`);
   const msg = {
     to: config.to,
     templateId,

@@ -1,12 +1,15 @@
 const dialogflow = require("@google-cloud/dialogflow");
-const { appendConversationHistory } = require("./data");
 const {
+  appendConversationHistory,
   addNewConversation,
   findActiveConversationFor,
-} = require("./utils/data");
+} = require("./data");
+
+const { retrieveReplyConfig } = require("./email");
 
 const sessionClient = new dialogflow.SessionsClient();
 
+// Retrieve or Create?
 async function getActiveConversationFor(emailAddress, key) {
   let conversation = await findActiveConversationFor(emailAddress, key);
   if (conversation === undefined) {
@@ -16,8 +19,13 @@ async function getActiveConversationFor(emailAddress, key) {
   return conversation;
 }
 
-async function sendToDialogFlow(conversation, replyText, languageCode = "en-US") {
-  const projectId = process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT;
+async function sendToDialogFlow(
+  conversation,
+  replyText,
+  languageCode = "en-US"
+) {
+  // TODO: projectId is undefined here
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
   const sessionPath = sessionClient.projectAgentSessionPath(
     projectId,
     conversation.id
@@ -33,18 +41,22 @@ async function sendToDialogFlow(conversation, replyText, languageCode = "en-US")
     },
   };
 
-  // TODO: Get the contexts from the conversation?
-  // conversation.history.at(-1).response.queryResult.outputContexts?
+  const lastEntry = conversation.get("history").at(-1);
 
-  // if (conversation.contexts && conversation.contexts.length > 0) {
-  //   request.queryParams = {
-  //     contexts: conversation.contexts,
-  //   };
-  // }
+  if (
+    lastEntry !== undefined &&
+    lastEntry.response.queryResult.outputContexts !== undefined
+  ) {
+    const contexts = lastEntry.response.queryResult.outputContexts;
+    if (contexts.length > 0) {
+      request.queryParams = {
+        contexts,
+      };
+    }
+  }
 
   const responses = await sessionClient.detectIntent(request);
   return responses[0];
-
 }
 
 async function processEmailReply(email) {
@@ -55,16 +67,25 @@ async function processEmailReply(email) {
     replyConfig.originalKey
   );
   const response = await sendToDialogFlow(conversation, replyConfig.replyText);
-  await appendConversationHistory(conversation, replyConfig.replyText, response);
+  await appendConversationHistory(
+    conversation,
+    replyConfig.replyText,
+    response
+  );
   // Parse out the Intent and Fields?
   console.log("Dialogflow response");
   console.dir(response);
   const result = {
-    isConversationComplete: response.endInteraction
+    isConversationComplete: response.queryResult.diagnosticInfo.fields.end_conversation.boolValue,
+    response,
   };
+  if (result.isConversationComplete) {
+    console.log(`Setting isActive to false for conversation ${conversation.id}`);
+    await conversation.ref.update({isActive: false});
+  }
   return result;
 }
 
 module.exports = {
-  processEmailReply
-}
+  processEmailReply,
+};

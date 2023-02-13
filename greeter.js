@@ -17,9 +17,9 @@ module.exports = async (cloudEvent) => {
   const userId = await addNewUser(emailAddress, { name });
   // Send Email (via a channel)
   // TODO: REPLY_ID might not be required here...use the template?
-  await sendToEmailer("WELCOME", emailAddress, {
+  const replyId = `U-${userId}`;
+  await sendToEmailer("WELCOME", emailAddress, replyId, {
     name,
     incoming_subject: email.subject,
-    reply_id: `U-${userId}`,
   });
 };

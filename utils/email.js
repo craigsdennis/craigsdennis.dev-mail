@@ -1,7 +1,7 @@
 const busboy = require("busboy");
 const { simpleParser } = require("mailparser");
 const { publishObject } = require("./events");
-const replyParser = require("node-email-reply-parser");
+const EmailReplyParser = require("email-reply-parser");
 
 function parseMultipartFormRequest(req) {
   return new Promise((resolve, reject) => {
@@ -25,15 +25,16 @@ async function emailFromRequest(req) {
 }
 
 function getReplyText(email) {
-  const emailContent = email.rawBody;
-  return replyParser(emailContent, true);
+  const e = new EmailReplyParser().read(email.text);
+  return e.getVisibleText();
 }
 
 // Should this include `from`?
-async function sendToEmailer(templateKey, to, data) {
+async function sendToEmailer(templateKey, to, replyId, data) {
   // ???:Environment variable here needs to be set...does a Terraform module save this problem?
   const messageId = await publishObject(process.env.OUTBOUND_EMAIL_TOPIC, {
     templateKey,
+    replyId,
     to,
     data,
   });
@@ -49,8 +50,8 @@ function toKey(email) {
 }
 
 function isReply(email) {
-  const toKey = toKey(email);
-  return toKey.toLowerCase().startsWith("reply");
+  const key = toKey(email);
+  return key.toLowerCase().startsWith("reply");
 }
 
 function generateReplyTo(key, domain) {

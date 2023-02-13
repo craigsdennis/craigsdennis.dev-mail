@@ -23,10 +23,6 @@ async function addNewUser(emailAddress, data) {
   return newUserRef.id;
 }
 
-async function retrieveConversation(emailAddress, key) {
-  // TODO: Find by key
-}
-
 async function findActiveConversationFor(emailAddress, replyKey) {
   const userRef = await _getUserRef(emailAddress);
   const convos = await userRef
@@ -47,7 +43,7 @@ async function addNewConversation(emailAddress, replyKey) {
     isActive: true,
     replyKey,
   });
-  return conversationRef.id;
+  return conversationRef.get();
 }
 
 async function appendConversationHistory(conversation, text, response) {
@@ -58,7 +54,7 @@ async function appendConversationHistory(conversation, text, response) {
     },
     response,
   };
-  await conversation.update("history", Firestore.FieldValue.arrayUnion(entry));
+  await conversation.ref.update("history", Firestore.FieldValue.arrayUnion(entry));
   // Should this mark it as done?
 }
 

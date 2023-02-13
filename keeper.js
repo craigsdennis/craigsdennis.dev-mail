@@ -13,10 +13,10 @@ module.exports = async (cloudEvent) => {
   const msgId = await storeMessageFor(emailAddress, email);
   console.log("Message stored");
   const messages = await getMessages(emailAddress);
-  sendToEmailer("STATUS", emailAddress, {
+  const replyId = `M-${msgId}`;
+  await sendToEmailer("STATUS", emailAddress, replyId, {
     // TODO: Is Snake Case right for templating in SendGrid town?
     status_message: "Your message was stored successfully",
-    reply_id: `M-${msgId}`,
     messages,
   });
 };

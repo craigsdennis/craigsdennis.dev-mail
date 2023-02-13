@@ -2,7 +2,9 @@ const { objectFromEvent } = require("./utils/events");
 const { processEmailReply } = require("./utils/conversations");
 
 async function handleResult(result) {
-  return { success: true };
+  console.log("Result from processEmailReply")
+  console.dir(result);
+  return true;
 }
 
 module.exports = async function (cloudEvent) {
@@ -12,6 +14,7 @@ module.exports = async function (cloudEvent) {
   const result = await processEmailReply(email);
   if (result.isConversationComplete) {
     const status = await handleResult(result);
+    console.log(`Status was ${status}`);
   }
   // TODO: If is the end modify config...maybe send to a new service configurator?
   // TODO: Send to emailer with context

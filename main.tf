@@ -61,6 +61,7 @@ resource "google_cloudfunctions2_function" "parser" {
 
     environment_variables = {
       TOPIC_INBOUND_EMAIL = var.inbound-email-received-topic
+      TOPIC_REPLY = var.reply-received-topic
     }
   }
 }
@@ -77,6 +78,11 @@ resource "google_cloud_run_service_iam_binding" "allUsers" {
 resource "google_pubsub_topic" "inbound_topic" {
   name = var.inbound-email-received-topic
 }
+
+resource "google_pubsub_topic" "reply_topic" {
+  name = var.reply-received-topic
+}
+
 
 resource "google_pubsub_topic" "outbound_email_topic" {
   name = var.outbound-email-ready-topic
@@ -173,6 +179,53 @@ resource "google_cloud_run_service_iam_binding" "keeper-binding" {
   ]
 }
 
+resource "google_cloudfunctions2_function" "replier" {
+  name        = "replier"
+  location    = "us-west1"
+  description = "Has a conversation with a reply"
+
+  build_config {
+    runtime     = "nodejs16"
+    entry_point = "replier" # Set the entry point 
+    source {
+      storage_source {
+        bucket = google_storage_bucket.bucket.name
+        object = google_storage_bucket_object.sourcecode.name
+      }
+    }
+  }
+
+  service_config {
+    max_instance_count             = 3
+    min_instance_count             = 1
+    available_memory               = "256M"
+    timeout_seconds                = 60
+    ingress_settings               = "ALLOW_INTERNAL_ONLY"
+    all_traffic_on_latest_revision = true
+    environment_variables = {
+      "OUTBOUND_EMAIL_TOPIC" = var.outbound-email-ready-topic
+      "GOOGLE_CLOUD_PROJECT_ID" = var.project
+    }
+  }
+
+  event_trigger {
+    trigger_region = "us-west1"
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.reply_topic.id
+    retry_policy   = "RETRY_POLICY_RETRY"
+  }
+}
+
+resource "google_cloud_run_service_iam_binding" "replier-binding" {
+  location = google_cloudfunctions2_function.replier.location
+  service  = google_cloudfunctions2_function.replier.name
+  role     = "roles/run.invoker"
+  members = [
+    var.compute_service_account
+  ]
+}
+
+
 resource "google_cloudfunctions2_function" "emailer" {
   name        = "emailer"
   location    = "us-west1"
@@ -235,6 +288,15 @@ resource "google_cloud_run_service_iam_binding" "emailer-binding" {
 resource "google_pubsub_topic_iam_binding" "inbound_binding" {
   project = var.project
   topic   = google_pubsub_topic.inbound_topic.name
+  role    = "roles/pubsub.admin"
+  members = [
+    var.compute_service_account,
+  ]
+}
+
+resource "google_pubsub_topic_iam_binding" "reply_binding" {
+  project = var.project
+  topic   = google_pubsub_topic.reply_topic.name
   role    = "roles/pubsub.admin"
   members = [
     var.compute_service_account,
